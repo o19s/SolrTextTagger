@@ -22,7 +22,9 @@
 
 package org.opensextant.solrtexttagger;
 
+import org.apache.commons.lang.math.RandomUtils;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -34,12 +36,15 @@ public class Tagger2Test extends AbstractTaggerTest {
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
   }
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    baseParams.set("overlaps", "LONGEST_DOMINANT_RIGHT");
+  }
 
   @Test
   /** whole matching, no sub-tags */
   public void testLongestDominantRight() throws Exception {
-    this.overlaps = "LONGEST_DOMINANT_RIGHT";
-
     buildNames("in", "San", "in San", "Francisco", "San Francisco",
         "San Francisco State College", "College of California",
         "Clayton", "Clayton North", "North Carolina");
@@ -56,16 +61,46 @@ public class Tagger2Test extends AbstractTaggerTest {
   }
 
   @Test
-  /** posInc > 1 https://github.com/OpenSextant/SolrTextTagger/issues/2 */
-  public void testPosIncJump() throws Exception {
-    this.overlaps = "LONGEST_DOMINANT_RIGHT";
-    StringBuilder tmp = new StringBuilder(40);//40 exceeds configured max token length
-    for (int i = 0; i < 40; i++) {
-      tmp.append((char)('0' + (i % 10)));
-    }
+  @Ignore
+  // As of Lucene/Solr 4.9, StandardTokenizer never does this anymore (reported to Lucene dev-list,
+  // Jan 26th 2015.  Honestly it's not particularly important to us but it renders this test
+  // pointless.
+  /** Orig issue https://github.com/OpenSextant/SolrTextTagger/issues/2  related: #13 */
+  public void testVeryLongWord() throws Exception {
     String SANFRAN = "San Francisco";
     buildNames(SANFRAN);
-    assertTags(tmp.toString()+" "+SANFRAN, SANFRAN);
+
+    // exceeds default 255 max token length which means it in-effect becomes a stop-word
+    StringBuilder STOP = new StringBuilder(260);//>255
+    for (int i = 0; i < STOP.capacity(); i++) {
+      STOP.append((char) ('0' + (i % 10)));
+    }
+
+    String doc = "San " + STOP + " Francisco";
+    assertTags(doc);//no match due to default stop word handling
+    //and we find it when we ignore stop words
+    assertTags(reqDoc(doc, "ignoreStopwords", "true"), new TestTag(0, doc.length(), doc, lookupByName(SANFRAN)));
+  }
+
+  @Test
+  /** Support for stopwords (posInc > 1);
+   * discussion: https://github.com/OpenSextant/SolrTextTagger/issues/13 */
+  public void testStopWords() throws Exception {
+    baseParams.set("qt", "/tagStop");//stop filter (pos inc enabled) index & query
+
+    String SOUTHOFWALES = "South of Wales";//'of' is stop word index time & query
+    String ACITYA = "A City A";
+
+    buildNames(SOUTHOFWALES, ACITYA);
+
+    //round-trip works
+    assertTags(reqDoc(SOUTHOFWALES), new TestTag(0, SOUTHOFWALES.length(), SOUTHOFWALES,
+            lookupByName(SOUTHOFWALES)));
+    //  but offsets doesn't include stopword when leading or trailing...
+    assertTags(reqDoc(ACITYA), new TestTag(2, 6, "City",
+            lookupByName(ACITYA)));
+    //break on stop words
+    assertTags(reqDoc(SOUTHOFWALES, "ignoreStopwords", "false"));//match nothing
   }
 
 }

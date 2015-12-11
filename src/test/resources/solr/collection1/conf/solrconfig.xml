@@ -29,13 +29,38 @@
   <dataDir>${solr.data.dir:}</dataDir>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
 
+  <!-- for postingsFormat="Memory" -->
+  <codecFactory name="CodecFactory" class="solr.SchemaCodecFactory" />
+  
+  <!-- since Solr 4.8: -->
+  <schemaFactory name="SchemaFactory" class="solr.ClassicIndexSchemaFactory" />
+
+  <query>
+    <!-- illustrate putting in memory for warm-up -->
+    <listener event="firstSearcher" class="solr.QuerySenderListener">
+      <arr name="queries">
+        <lst><str name="q">name_tag:[* TO *]</str></lst>
+      </arr>
+    </listener>
+    <listener event="newSearcher" class="solr.QuerySenderListener">
+      <arr name="queries">
+        <lst><str name="q">name_tag:[* TO *]</str></lst>
+      </arr>
+    </listener>
+  </query>
+
   <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>
 
   <requestHandler name="/tag" class="org.opensextant.solrtexttagger.TaggerRequestHandler">
-    <str name="indexedField">name_tagIdx</str>
-    <str name="storedField">name</str>
-    <bool name="partialMatches">false</bool>
-    <str name="fq">NOT name:(of the)</str><!-- filter out -->
+    <lst name="defaults">
+      <str name="field">name_tag</str>
+      <str name="fq">NOT name:(of the)</str><!-- filter out -->
+    </lst>
+  </requestHandler>
+
+  <requestHandler name="/tagStop" class="org.opensextant.solrtexttagger.TaggerRequestHandler">
+    <!-- top level params; legacy format just to test it still works -->
+    <str name="field">name_tagStop</str>
   </requestHandler>
   
   <!-- used for testing PositionIncrementAttribute and PositionLengthAttribute support -->
@@ -76,10 +101,14 @@
   </requestHandler>
 
   <requestHandler name="/tagPartial" class="org.opensextant.solrtexttagger.TaggerRequestHandler">
-    <str name="indexedField">name_tagIdx</str>
-    <str name="storedField">name</str>
-    <bool name="partialMatches">true</bool>
+    <!-- top level params; legacy format just to test it still works -->
+    <str name="field">name_tagPartial</str>
     <str name="fq">NOT name:(of the)</str><!-- filter out -->
+  </requestHandler>
+
+  <requestHandler name="/tagXml" class="org.opensextant.solrtexttagger.TaggerRequestHandler">
+    <!-- top level params; legacy format just to test it still works -->
+    <str name="field">name_tagXml</str>
   </requestHandler>
 
   <requestHandler name="/update" class="solr.UpdateRequestHandler" />

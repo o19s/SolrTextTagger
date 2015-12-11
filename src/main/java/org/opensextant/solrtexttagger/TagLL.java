@@ -22,46 +22,43 @@
 
 package org.opensextant.solrtexttagger;
 
+import org.apache.lucene.util.BytesRef;
+
 import java.io.IOException;
 
 /**
  * This is a Tag -- a startOffset, endOffset and value.
  * <p>
  * A Tag starts without a value in an
- * "advancing" state.  {@link #advance(int, int)} is called with subsequent words
- * and then eventually it won't advance any more, and value is set (could be null).
+ * "advancing" state.  {@link #advance(org.apache.lucene.util.BytesRef, int)}
+ * is called with subsequent words and then eventually it won't advance any
+ * more, and value is set (could be null).
  * <p>
  * A Tag is also a doubly-linked-list (hence the LL in the name). All tags share
  * a reference to the head via a 1-element array, which is potentially modified
  * if any of the linked-list methods are called. Tags in the list should have
  * equal or increasing start offsets.
- *
- * @author David Smiley - dsmiley@mitre.org
  */
 public class TagLL{
 
   private final TagLL[] head;//a shared pointer to the head; 1 element
   TagLL prevTag, nextTag; // linked list
 
-  private MyFstCursor<Long> cursor;
+  private TermPrefixCursor cursor;
 
   final int startOffset;//inclusive
   int endOffset;//exclusive
-  Long value;
+  Object value;//null means unset
 
   /** optional boolean used by some TagClusterReducer's */
   boolean mark = false;
 
-  TagLL(TagLL[] head, MyFstCursor<Long> cursor, int startOffset, int endOffset, Long value) {
+  TagLL(TagLL[] head, TermPrefixCursor cursor, int startOffset, int endOffset, Object value) {
     this.head = head;
     this.cursor = cursor;
     this.startOffset = startOffset;
     this.endOffset = endOffset;
     this.value = value;
-  }
-
-  private MyFstCursor<Long> cursor() {
-    return cursor;
   }
 
   /**
@@ -71,6 +68,7 @@ public class TagLL{
    * into the LL as side-effect. If this returns false (it didn't advance) and
    * if there is no value, then it will also be removed.
    *
+   *
    * @param word      The next word (FST ord surrogate); not -1
    * @param offset    The last character in word's offset in the underlying
    *                  stream. If word is -1 then it's meaningless.
@@ -79,13 +77,13 @@ public class TagLL{
    *
    * @throws java.io.IOException
    */
-  boolean advance(int word, int offset) throws IOException {
+  boolean advance(BytesRef word, int offset) throws IOException {
     if (!isAdvancing())
       return false;
 
-    Long iVal = cursor().getValue();
+    Object iVal = cursor.getDocIds();
 
-    if (word >= 0 && cursor().nextByLabel(word)) {
+    if (word != null && cursor.advance(word)) {
 
       if (iVal != null) {
         addBeforeLL(new TagLL(head, null, startOffset, endOffset, iVal));
@@ -103,8 +101,9 @@ public class TagLL{
     }
   }
 
-  /** Removes this tag from the chain, connecting prevTag and nextTag. Does not modify "this" object's pointers,
-   * so the caller can refer to nextTag after removing it. */
+  /** Removes this tag from the chain, connecting prevTag and nextTag. Does not
+   * modify "this" object's pointers, so the caller can refer to nextTag after
+   * removing it. */
   public void removeLL() {
     if (head[0] == this)
       head[0] = nextTag;
@@ -148,11 +147,11 @@ public class TagLL{
   public TagLL getNextTag() {
     return nextTag;
   }
-  
+
   public TagLL getPrevTag() {
     return prevTag;
   }
-  
+
   public int getStartOffset() {
     return startOffset;
   }

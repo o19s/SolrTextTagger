@@ -47,9 +47,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * Tests that we can skip serialization of the documents when embedding
  * Solr.
  *
- * @author David Smiley - dsmiley@mitre.org
- *
- * @deprecated Simply use {@link StreamingResponseCallback} instead.
+ * @author David Smiley - dsmiley@apache.org
  */
 public class EmbeddedSolrNoSerializeTest extends SolrTestCaseJ4 {
 
@@ -58,7 +56,7 @@ public class EmbeddedSolrNoSerializeTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void init() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
-    solrServer = new NoSerializeEmbeddedSolrServer(h.getCoreContainer(), null);
+    solrServer = new EmbeddedSolrServer(h.getCoreContainer(), "collection1");
     //we don't need to close the EmbeddedSolrServer because SolrTestCaseJ4 closes the core
   }
 
@@ -78,7 +76,7 @@ public class EmbeddedSolrNoSerializeTest extends SolrTestCaseJ4 {
     req.setPath("/tag");
 
     QueryResponse rsp = req.process(solrServer);
-    SolrDocumentList results= (SolrDocumentList) rsp.getResponse().get("matchingDocs");
+    SolrDocumentList results= (SolrDocumentList) rsp.getResponse().get("response");
     assertNotNull(rsp.getResponse().get("tags"));
     assertNotNull(results.get(0));
   }
@@ -101,7 +99,7 @@ public class EmbeddedSolrNoSerializeTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSearch() throws SolrServerException {
+  public void testSearch() throws Exception {
     QueryResponse rsp = solrServer.query(params("q", "name:Boston"));
     assertNotNull(rsp.getResults().get(0));
   }

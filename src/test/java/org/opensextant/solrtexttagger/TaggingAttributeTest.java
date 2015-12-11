@@ -34,8 +34,10 @@ public class TaggingAttributeTest extends AbstractTaggerTest {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    //NOTE: We use the TaggingAttribute specific condifiguration
-    initCore("solrconfig.xml", "schema.xml", "taggingattribute");
+    //NOTE: We use the TaggingAttribute specific configuration
+    // Reference solr-home in target/test-classes since that's where it's copied and any config
+    // persisting (e.g. from rest managed stuff) will happen there.
+    initCore("solrconfig.xml", "schema.xml", "target/test-classes/taggingattribute");
   }
 
   @Test
@@ -47,7 +49,7 @@ public class TaggingAttributeTest extends AbstractTaggerTest {
   public void testTaggingAttribute() throws Exception {
     // this test is based on the longest dominant right test, so we use the
     // the same TagClusterReducer setting
-    this.overlaps = "LONGEST_DOMINANT_RIGHT";
+    baseParams.set("overlaps", "LONGEST_DOMINANT_RIGHT");
 
     buildNames("in", "San", "in San", "Francisco", "San Francisco",
         "San Francisco State College", "College of California",

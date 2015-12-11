@@ -59,8 +59,8 @@ public class TaggerTest extends AbstractTaggerTest {
 
   @Test
   public void testFormat() throws Exception {
-    requestHandler = "/tagPartial";
-    overlaps = "NO_SUB";
+    baseParams.set("qt", "/tagPartial");
+    baseParams.set("overlaps", "NO_SUB");
     indexAndBuild();
 
     String rspStr = _testFormatRequest(false);
@@ -72,7 +72,7 @@ public class TaggerTest extends AbstractTaggerTest {
           "<int name=\"endOffset\">6</int>" +
           "<arr name=\"ids\"><str>1</str></arr>" +
         "</lst></arr>" +
-        "<result name=\"matchingDocs\" numFound=\"1\" start=\"0\">" +
+        "<result name=\"response\" numFound=\"1\" start=\"0\">" +
           "<doc><str name=\"id\">1</str><str name=\"name\">London Business School</str></doc>" +
         "</result>\n" +
         "</response>\n";
@@ -81,8 +81,8 @@ public class TaggerTest extends AbstractTaggerTest {
 
   @Test
   public void testFormatMatchText() throws Exception {
-    requestHandler = "/tagPartial";
-    overlaps = "NO_SUB";
+    baseParams.set("qt", "/tagPartial");
+    baseParams.set("overlaps", "NO_SUB");
     indexAndBuild();
 
     String rspStr = _testFormatRequest(true);
@@ -95,7 +95,7 @@ public class TaggerTest extends AbstractTaggerTest {
           "str name=\"matchText\">school</str>" +
           "<arr name=\"ids\"><str>1</str></arr>" +
         "</lst></arr>" +
-        "<result name=\"matchingDocs\" numFound=\"1\" start=\"0\">" +
+        "<result name=\"response\" numFound=\"1\" start=\"0\">" +
           "<doc><str name=\"id\">1</str><str name=\"name\">London Business School</str></doc>" +
         "</result>\n" +
         "</response>\n";
@@ -113,8 +113,8 @@ public class TaggerTest extends AbstractTaggerTest {
   @Test
   /** Partial matching, no sub-tags */
   public void testPartialMatching() throws Exception {
-    requestHandler = "/tagPartial";
-    overlaps = "NO_SUB";
+    baseParams.set("qt", "/tagPartial");
+    baseParams.set("overlaps", "NO_SUB");
     indexAndBuild();
 
     //these match nothing
@@ -150,7 +150,8 @@ public class TaggerTest extends AbstractTaggerTest {
   @Test
   /** whole matching, no sub-tags */
   public void testWholeMatching() throws Exception {
-    overlaps = "NO_SUB";
+    baseParams.set("qt", "/tag");
+    baseParams.set("overlaps", "NO_SUB");
     indexAndBuild();
 
     //these match nothing
@@ -191,7 +192,8 @@ public class TaggerTest extends AbstractTaggerTest {
   @Test
   /** whole matching, with sub-tags */
   public void testSubTags() throws Exception {
-    overlaps = "ALL";
+    baseParams.set("qt", "/tag");
+    baseParams.set("overlaps", "ALL");
     indexAndBuild();
 
     //these match nothing
